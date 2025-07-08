@@ -8,6 +8,13 @@
       "when": 1752011365254,
       "tag": "0000_illegal_rocket_raccoon",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1752012451077,
+      "tag": "0001_fixed_shape",
+      "breakpoints": true
     }
   ]
 }

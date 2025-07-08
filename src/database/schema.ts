@@ -56,7 +56,7 @@ export const draft_responses = pgTable('draft_responses', {
   created_by_user_id: integer('created_by_user_id').references(() => users.id),
   version: integer('version').notNull().default(1),
   parent_draft_id: integer('parent_draft_id').references(() => draft_responses.id),
-  confidence_score: decimal('confidence_score', { precision: 3, scale: 2 }),
+  confidence_score: decimal('confidence_score', { precision: 4, scale: 3 }),
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow()
 });

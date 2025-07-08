@@ -1,0 +1,1 @@
+ALTER TABLE "draft_responses" ALTER COLUMN "confidence_score" SET DATA TYPE numeric(4, 3);

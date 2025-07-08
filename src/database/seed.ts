@@ -131,7 +131,7 @@ async function seed() {
         generated_content: 'Thank you for contacting support. I can help you resolve your login issues. Please try the following steps: 1) Clear your browser cache, 2) Try a different browser, 3) Reset your password using the forgot password link.',
         status: 'pending',
         created_by_user_id: null, // AI-generated
-        confidence_score: '0.85'
+        confidence_score: 0.85
       },
       {
         email_id: insertedEmails[2].id,
@@ -139,7 +139,7 @@ async function seed() {
         generated_content: 'Hi there! Your subscription is set to auto-renew on the 15th of next month. The renewal cost will be $49.99. You can manage your subscription settings in your account dashboard.',
         status: 'approved',
         created_by_user_id: insertedUsers[1].id, // Sarah Manager
-        confidence_score: '0.92'
+        confidence_score: 0.92
       },
       {
         email_id: insertedEmails[3].id,
@@ -147,7 +147,7 @@ async function seed() {
         generated_content: 'Thank you for your feature request. We appreciate your feedback about our API documentation. Our development team is working on improving the documentation with more comprehensive examples.',
         status: 'rejected',
         created_by_user_id: insertedUsers[2].id, // Mike Admin
-        confidence_score: '0.78'
+        confidence_score: 0.78
       },
       {
         email_id: insertedEmails[3].id,
@@ -157,7 +157,7 @@ async function seed() {
         created_by_user_id: insertedUsers[2].id, // Mike Admin
         parent_draft_id: null, // Will be set to the previous draft ID
         version: 2,
-        confidence_score: '0.94'
+        confidence_score: 0.94
       }
     ]).returning();
 
