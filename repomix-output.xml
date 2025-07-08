@@ -1,0 +1,578 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+docs/
+  .archive/
+    ARCHIVED_TABLES.md
+src/
+  databaase/
+    migrate.ts
+  index.ts
+.env.example
+.gitignore
+AGENT.md
+package.json
+README.md
+tsconfig.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="AGENT.md">
+# Agent Development Guide
+
+## Build/Test/Lint Commands
+- `npm run dev` - Start development server with hot reload
+- `npm run build` - Build TypeScript to dist/ directory
+- `npm run start` - Run production build
+- `npm run db:generate` - Generate Drizzle schema migrations
+- `npm run db:migrate` - Run database migrations
+- `npm run db:seed` - Seed database with test data
+- No test runner configured yet
+
+## Architecture
+- **Backend**: Hono API server with TypeScript
+- **Database**: PostgreSQL with Drizzle ORM (Neon serverless)
+- **Connection**: Uses `@neondatabase/serverless` with `drizzle-orm/neon-http`
+- **Entry point**: `src/index.ts`
+- **Schema**: `src/databaase/schema.ts` (currently empty)
+- **Migrations**: `src/databaase/migrate.ts`
+
+## Code Style & Conventions
+- **TypeScript**: Strict mode enabled, ES modules (`"type": "module"`)
+- **Imports**: Use ES module syntax, no file extensions in imports
+- **Database**: Follow Neon/Drizzle patterns from .cursorrules
+- **API**: Hono framework patterns, use `c.text()`, `c.json()` for responses
+- **Error handling**: Throw errors for database connection issues
+- **Environment**: Use `.env` for DATABASE_URL and secrets
+</file>
+
+<file path="docs/.archive/ARCHIVED_TABLES.md">
+# Archived Data Model Ideas (Beyond MVP)
+
+The sections below were moved out of the main docs to avoid confusion while we focus on the four-table MVP. Keep these handy for post-MVP planning.
+
+---
+
+## Stand-Alone Tables
+- **Attachments** → just reference `email_id`
+- **Templates** → standalone with optional `created_by_user_id`
+- **Knowledge_Base_Articles** → standalone
+- **Audit_Logs** → track all system actions
+- **Email_Labels/Tags** → many-to-many with threads
+
+## Multi-Tenancy (Future)
+- Add `company_id` to Thread, User, Draft_Response
+- Introduce **Company** table
+
+## Workflow Management
+- **Escalation_Rules** table
+- **Approval_Workflow** states
+
+## Provider / Integration Layer
+- **Email_Account** & **Integration** tables for multiple email providers
+
+## Real-Time Collaboration
+- **Draft_Versions**, **Edit_Locks**, **Collaborative_Edits** tables
+
+## Advanced AI Context
+- **Conversation_Context**, **AI_Training_Data**, **Model_Versions** tables
+
+## Agent Logging & Review
+- **User_Actions** (enhanced)
+- **Draft_Response_Reviews** (enhanced)
+
+> Original SQL snippets and analytics queries can be found in docs/DATA_MODELS_2.md prior to this archive.
+</file>
+
+<file path="src/databaase/migrate.ts">
+import { drizzle } from 'drizzle-orm/neon-http';
+import { neon } from '@neondatabase/serverless';
+import { migrate } from 'drizzle-orm/neon-http/migrator';
+import { config } from 'dotenv';
+config({ path: '.env' });
+const sql = neon(process.env.DATABASE_URL!);
+const db = drizzle(sql);
+const main = async () => {
+  try {
+    await migrate(db, { migrationsFolder: 'drizzle' });
+    console.log('Migration completed');
+  } catch (error) {
+    console.error('Error during migration:', error);
+    process.exit(1);
+  }
+};
+main();
+</file>
+
+<file path="src/index.ts">
+import { serve } from '@hono/node-server'
+import { Hono } from 'hono'
+
+const app = new Hono()
+
+app.get('/', (c) => {
+  return c.text('Hello Hono!')
+})
+
+serve({
+  fetch: app.fetch,
+  port: 3000
+}, (info) => {
+  console.log(`Server is running on http://localhost:${info.port}`)
+})
+</file>
+
+<file path=".env.example">
+DATABASE_URL=NEON_DATABASE_CONNECTION_STRING
+</file>
+
+<file path=".gitignore">
+# dev
+.yarn/
+!.yarn/releases
+.vscode/*
+!.vscode/launch.json
+!.vscode/*.code-snippets
+.idea/workspace.xml
+.idea/usage.statistics.xml
+.idea/shelf
+
+# deps
+node_modules/
+
+# env
+.env
+.env.production
+
+# logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# misc
+.DS_Store
+</file>
+
+<file path="tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "NodeNext",
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "types": [
+      "node"
+    ],
+    "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx",
+    "outDir": "./dist"
+  },
+  "exclude": ["node_modules"]
+}
+</file>
+
+<file path="package.json">
+{
+  "name": "email-support-agent",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:generate": "drizzle-kit generate --dialect=postgresql --schema=src/schema.ts --out=./drizzle",
+    "db:migrate": "tsx ./src/migrate.ts",
+    "db:seed": "tsx ./src/seed.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.15.0",
+    "@neondatabase/serverless": "^1.0.1",
+    "drizzle-orm": "^0.44.2",
+    "hono": "^4.8.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.17",
+    "dotenv": "^17.1.0",
+    "drizzle-kit": "^0.31.4",
+    "tsx": "^4.7.1",
+    "typescript": "^5.8.3"
+  }
+}
+</file>
+
+<file path="README.md">
+# Agentic Email Service
+
+An intelligent email management system that uses LLM agents to automatically draft responses to customer emails based on your company's knowledge base. For the MVP, the system will use simulated email data to allow for core feature development without requiring external email provider integration.
+
+## Overview
+
+This service provides a web-based email client where LLM agents analyze incoming emails, generate contextually appropriate draft responses, and manage the approval workflow. The system is designed for single-company use, allowing your team to efficiently handle customer communications with AI assistance.
+
+## Features
+
+- **Thread-based email organization** - View and manage email conversations as organized threads
+- **AI-powered draft generation** - LLM agents automatically create response drafts using company knowledge
+- **Intelligent review system** - Agents evaluate draft quality and confidence scores
+- **Automated approval workflow** - High-confidence drafts can be auto-approved, others escalate to humans
+- **Real-time processing** - Immediate draft generation as emails arrive
+
+## Tech Stack
+
+- **Backend**: Hono API server
+- **Frontend**: React + Vite
+- **Database**: PostgreSQL 
+- **ORM**: Drizzle ORMgit
+- **LLM Provider**: OpenAI GPT models
+- **Authentication**: JWT-based auth
+
+## Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐
+│   Hono API      │    │   React Client  │
+│   Server        │◄──►│   (Vite)        │
+└─────────────────┘    └─────────────────┘
+        │
+        ▼
+ ┌─────────────────┐    ┌─────────────────┐
+ │   PostgreSQL    │    │   OpenAI API    │
+ │   Database      │    │   (GPT-4)       │
+ └─────────────────┘    └─────────────────┘
+```
+
+## Data Models
+
+### Database ER Diagram
+
+```mermaid
+erDiagram
+    USER {
+        INT id PK
+        VARCHAR email
+        VARCHAR name
+        VARCHAR role
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    THREAD {
+        INT id PK
+        VARCHAR subject
+        JSON participant_emails
+        ENUM status "active | closed | needs_attention"
+        TIMESTAMP last_activity_at
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    EMAIL {
+        INT id PK
+        INT thread_id FK
+        VARCHAR from_email
+        JSON to_emails
+        JSON cc_emails
+        JSON bcc_emails
+        VARCHAR subject
+        TEXT body_text
+        TEXT body_html
+        ENUM direction "inbound | outbound"
+        BOOLEAN is_draft
+        TIMESTAMP sent_at
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    DRAFT_RESPONSE {
+        INT id PK
+        INT email_id FK
+        INT thread_id FK
+        TEXT generated_content
+        ENUM status "pending | approved | rejected | sent"
+        INT created_by_user_id FK
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+        INT version
+        INT parent_draft_id FK
+        DECIMAL confidence_score
+    }
+
+    USER ||--o{ DRAFT_RESPONSE : "creates"
+    THREAD ||--|{ EMAIL : "contains"
+    THREAD ||--|{ DRAFT_RESPONSE : "has"
+    EMAIL ||--|{ DRAFT_RESPONSE : "reply"
+```
+
+### Table Definitions
+
+**User**
+- `id` (primary key)
+- `email` (unique)
+- `name`
+- `role` ("agent", "manager", etc.)
+- `created_at`, `updated_at`
+
+**Thread**
+- `id` (primary key)
+- `subject`
+- `participant_emails` (JSON array)
+- `status` (enum: "active", "closed", "needs_attention")
+- `last_activity_at`
+- `created_at`, `updated_at`
+
+**Email**
+- `id` (primary key)
+- `thread_id` (foreign key → Thread.id)
+- `from_email`
+- `to_emails`, `cc_emails`, `bcc_emails`
+- `subject`
+- `body_text`, `body_html`
+- `direction` (enum: "inbound", "outbound")
+- `is_draft` (boolean)
+- `sent_at` (nullable)
+- `created_at`, `updated_at`
+
+**Draft_Response**
+- `id` (primary key)
+- `email_id` (foreign key → Email.id)
+- `thread_id` (foreign key → Thread.id)
+- `generated_content`
+- `status` (enum: "pending", "approved", "rejected", "sent")
+- `created_by_user_id` (foreign key → User.id, nullable for AI system)
+- `version` (integer, default 1)
+- `parent_draft_id` (self-referencing FK, nullable)
+- `confidence_score` (decimal, nullable)
+- `created_at`, `updated_at`
+
+## Agentic Workflow (MVP)
+
+1. **Simulated Email Intake** – A UI button or CLI command inserts a new record into `Email` (and creates a `Thread` if needed).
+2. **Draft Generation** – Backend endpoint `POST /api/drafts/generate` creates a `Draft_Response` with status `pending`.
+3. **Automated Evaluation** – Agent calls `POST /api/drafts/:id/evaluate` to assign a confidence score and set status to `approved`, `rejected`, or leave `pending`.
+4. **Auto-Approval Path** – High confidence (`approved`) drafts automatically transition to "Ready to Send".
+5. **Human Review Path** – Users can review drafts, request revisions (`POST /api/drafts/:id/revise`), or approve them.
+6. **Send / Export** – Approved drafts are displayed in the UI for copy-paste sending. Future versions will integrate real email sending.
+
+## API Endpoints
+
+### Email Management
+```
+GET    /api/threads              # List email threads
+GET    /api/threads/:id          # Get thread details
+GET    /api/threads/:id/emails   # Get emails in thread
+POST   /api/emails/send          # Send email (displays in UI for MVP)
+```
+
+### Draft Management
+```
+POST   /api/drafts/generate      # Generate new draft
+GET    /api/drafts/:id           # Get draft details
+POST   /api/drafts/:id/approve   # Approve draft
+POST   /api/drafts/:id/revise    # Request revision
+POST   /api/drafts/:id/evaluate  # LLM evaluation
+```
+
+## Installation
+
+### Prerequisites
+- Node.js 18+ or Bun runtime
+- Hono framework
+- Drizzle ORM
+- PostgreSQL 14+
+- OpenAI API key
+
+### Backend Setup
+```bash
+cd server
+npm install
+# or with bun: bun install
+cp .env.example .env
+# Configure database and OpenAI credentials in .env
+npx drizzle-kit generate
+npx drizzle-kit migrate
+npm run dev
+```
+
+### Frontend Setup
+```bash
+cd client
+npm install
+cp .env.example .env
+# Configure API endpoint in .env
+npm run dev
+```
+
+### Environment Variables
+
+**Backend (.env)**
+```
+DATABASE_URL=postgresql://user:password@localhost:5432/agentic_email
+OPENAI_API_KEY=sk-...
+JWT_SECRET=your-secret-key
+```
+
+**Drizzle Configuration (drizzle.config.ts)**
+```typescript
+import type { Config } from 'drizzle-kit';
+
+export default {
+  schema: './src/db/schema.ts',
+  out: './drizzle',
+  driver: 'pg',
+  dbCredentials: {
+    connectionString: process.env.DATABASE_URL!,
+  },
+} satisfies Config;
+```
+
+**Frontend (.env)**
+```
+VITE_API_URL=http://localhost:3000
+```
+
+## Usage
+
+### Basic Workflow
+
+1. **Email arrives** - System receives simulated email data via a manual trigger in the UI.
+2. **Draft generation** - LLM agent analyzes email and creates response draft
+3. **Agent evaluation** - AI evaluates draft quality and assigns confidence score
+4. **Approval decision**:
+   - High confidence (>0.85): Auto-approve and mark as ready to send
+   - Medium confidence (0.6-0.85): Queue for human review
+   - Low confidence (<0.6): Escalate with revision request
+5. **Sending**: Approved emails are displayed in the UI for the user to copy/paste.
+
+### Human Oversight
+
+Users can:
+- Review auto-generated drafts before sending
+- Override agent decisions
+- Provide feedback for model improvement
+- Monitor agent activity by viewing generated drafts and their statuses.
+
+## Configuration
+
+### LLM Agent Settings
+```javascript
+// config/agent-settings.js
+export const agentConfig = {
+  model: "gpt-4",
+  temperature: 0.7,
+  maxTokens: 500,
+  autoApprovalThreshold: 0.85,
+  escalationThreshold: 0.6,
+  knowledgeBaseSources: ["docs", "previous-emails", "faq"]
+}
+```
+
+## Development
+
+### Database Migrations
+```bash
+# Generate new migration
+npx drizzle-kit generate --name migration_name
+
+# Apply migrations
+npx drizzle-kit migrate
+
+# View database schema
+npx drizzle-kit studio
+```
+
+### Testing
+```bash
+# Backend tests
+cd server && npm test
+# or with bun: cd server && bun test
+
+# Frontend tests  
+cd client && npm test
+
+# E2E tests
+npm run test:e2e
+```
+
+## Deployment
+
+### Production Checklist
+- [ ] Configure production database
+- [ ] Set up backup procedures
+- [ ] Configure rate limiting
+- [ ] Set up SSL certificates
+
+### Docker Deployment
+```bash
+docker-compose up -d
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For questions or support, please:
+- Check the [Wiki](wiki) for common issues
+- Open an issue for bug reports
+- Contact the development team for feature requests
+
+---
+
+**Note**: This is an MVP implementation. Future versions will include advanced features like multi-tenant support, custom knowledge base integration, enhanced AI model fine-tuning capabilities, and integration with email providers.
+</file>
+
+</files>
