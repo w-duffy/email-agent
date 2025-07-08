@@ -6,6 +6,18 @@ export const statusEnum = pgEnum('status', ['active', 'closed', 'needs_attention
 export const directionEnum = pgEnum('direction', ['inbound', 'outbound']);
 export const draftStatusEnum = pgEnum('draft_status', ['pending', 'approved', 'rejected', 'sent']);
 export const roleEnum = pgEnum('role', ['agent', 'manager', 'admin']);
+export const agentActionEnum = pgEnum('agent_action', [
+  'email_read',
+  'email_forwarded',
+  'draft_created',
+  'draft_edited',
+  'draft_approved',
+  'draft_rejected',
+  'draft_sent',
+  'thread_assigned',
+  'thread_status_changed',
+  'thread_archived'
+]);
 
 // User Table
 export const users = pgTable('users', {
@@ -55,20 +67,40 @@ export const draft_responses = pgTable('draft_responses', {
   status: draftStatusEnum('status').notNull().default('pending'),
   created_by_user_id: integer('created_by_user_id').references(() => users.id),
   version: integer('version').notNull().default(1),
-  parent_draft_id: integer('parent_draft_id').references(() => draft_responses.id),
+  parent_draft_id: integer('parent_draft_id'),
   confidence_score: decimal('confidence_score', { precision: 4, scale: 3 }),
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow()
 });
 
+// Agent Actions Table
+export const agent_actions = pgTable('agent_actions', {
+  id: serial('id').primaryKey(),
+  thread_id: integer('thread_id')
+    .references(() => threads.id, { onDelete: 'restrict' })
+    .notNull(),
+  email_id: integer('email_id')
+    .references(() => emails.id, { onDelete: 'set null' }),
+  draft_response_id: integer('draft_response_id')
+    .references(() => draft_responses.id, { onDelete: 'set null' }),
+  actor_user_id: integer('actor_user_id')
+    .references(() => users.id, { onDelete: 'set null' }),
+  action: agentActionEnum('action').notNull(),
+  metadata: jsonb('metadata'),
+  ip_address: varchar('ip_address', { length: 45 }),
+  created_at: timestamp('created_at').defaultNow().notNull()
+});
+
 // Define relations
 export const usersRelations = relations(users, ({ many }) => ({
-  draft_responses: many(draft_responses)
+  draft_responses: many(draft_responses),
+  agent_actions: many(agent_actions)
 }));
 
 export const threadsRelations = relations(threads, ({ many }) => ({
   emails: many(emails),
-  draft_responses: many(draft_responses)
+  draft_responses: many(draft_responses),
+  agent_actions: many(agent_actions)
 }));
 
 export const emailsRelations = relations(emails, ({ one, many }) => ({
@@ -76,10 +108,11 @@ export const emailsRelations = relations(emails, ({ one, many }) => ({
     fields: [emails.thread_id],
     references: [threads.id]
   }),
-  draft_responses: many(draft_responses)
+  draft_responses: many(draft_responses),
+  agent_actions: many(agent_actions)
 }));
 
-export const draftResponsesRelations = relations(draft_responses, ({ one }) => ({
+export const draftResponsesRelations = relations(draft_responses, ({ one, many }) => ({
   email: one(emails, {
     fields: [draft_responses.email_id],
     references: [emails.id]
@@ -95,5 +128,25 @@ export const draftResponsesRelations = relations(draft_responses, ({ one }) => (
   parent_draft: one(draft_responses, {
     fields: [draft_responses.parent_draft_id],
     references: [draft_responses.id]
+  }),
+  agent_actions: many(agent_actions)
+}));
+
+export const agentActionsRelations = relations(agent_actions, ({ one }) => ({
+  thread: one(threads, {
+    fields: [agent_actions.thread_id],
+    references: [threads.id]
+  }),
+  email: one(emails, {
+    fields: [agent_actions.email_id],
+    references: [emails.id]
+  }),
+  draft_response: one(draft_responses, {
+    fields: [agent_actions.draft_response_id],
+    references: [draft_responses.id]
+  }),
+  actor_user: one(users, {
+    fields: [agent_actions.actor_user_id],
+    references: [users.id]
   })
 }));

@@ -15,6 +15,13 @@
       "when": 1752012451077,
       "tag": "0001_fixed_shape",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1752013708183,
+      "tag": "0002_abnormal_frog_thor",
+      "breakpoints": true
     }
   ]
 }
