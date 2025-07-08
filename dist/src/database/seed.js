@@ -1,10 +1,11 @@
-import { db } from './db';
-import { users, threads, emails, draft_responses } from './schema';
+import { db } from './db.js';
+import { users, threads, emails, draft_responses, agent_actions } from './schema.js';
 import { eq } from 'drizzle-orm';
 async function seed() {
     try {
         console.log('Starting database seed...');
         // Clear existing data in reverse order of dependencies
+        await db.delete(agent_actions);
         await db.delete(draft_responses);
         await db.delete(emails);
         await db.delete(threads);
@@ -122,7 +123,7 @@ async function seed() {
                 generated_content: 'Thank you for contacting support. I can help you resolve your login issues. Please try the following steps: 1) Clear your browser cache, 2) Try a different browser, 3) Reset your password using the forgot password link.',
                 status: 'pending',
                 created_by_user_id: null, // AI-generated
-                confidence_score: 0.85
+                confidence_score: '0.85'
             },
             {
                 email_id: insertedEmails[2].id,
@@ -130,7 +131,7 @@ async function seed() {
                 generated_content: 'Hi there! Your subscription is set to auto-renew on the 15th of next month. The renewal cost will be $49.99. You can manage your subscription settings in your account dashboard.',
                 status: 'approved',
                 created_by_user_id: insertedUsers[1].id, // Sarah Manager
-                confidence_score: 0.92
+                confidence_score: '0.92'
             },
             {
                 email_id: insertedEmails[3].id,
@@ -138,7 +139,7 @@ async function seed() {
                 generated_content: 'Thank you for your feature request. We appreciate your feedback about our API documentation. Our development team is working on improving the documentation with more comprehensive examples.',
                 status: 'rejected',
                 created_by_user_id: insertedUsers[2].id, // Mike Admin
-                confidence_score: 0.78
+                confidence_score: '0.78'
             },
             {
                 email_id: insertedEmails[3].id,
@@ -148,7 +149,7 @@ async function seed() {
                 created_by_user_id: insertedUsers[2].id, // Mike Admin
                 parent_draft_id: null, // Will be set to the previous draft ID
                 version: 2,
-                confidence_score: 0.94
+                confidence_score: '0.94'
             }
         ]).returning();
         // Update the last draft to reference the previous one as parent
@@ -156,12 +157,61 @@ async function seed() {
             .set({ parent_draft_id: insertedDrafts[2].id })
             .where(eq(draft_responses.id, insertedDrafts[3].id));
         console.log(`✓ Inserted ${insertedDrafts.length} draft responses`);
+        // Insert sample agent actions
+        const insertedActions = await db.insert(agent_actions).values([
+            {
+                thread_id: insertedThreads[0].id,
+                email_id: insertedEmails[0].id,
+                actor_user_id: insertedUsers[0].id, // John Agent
+                action: 'email_read',
+                metadata: { read_duration_seconds: 45, device: 'desktop' },
+                ip_address: '192.168.1.100'
+            },
+            {
+                thread_id: insertedThreads[0].id,
+                email_id: insertedEmails[0].id,
+                draft_response_id: insertedDrafts[0].id,
+                actor_user_id: null, // AI system action
+                action: 'draft_created',
+                metadata: {
+                    model: 'gpt-4',
+                    confidence_score: 0.85,
+                    processing_time_ms: 1250,
+                    tokens_used: 342
+                }
+            },
+            {
+                thread_id: insertedThreads[1].id,
+                email_id: insertedEmails[2].id,
+                draft_response_id: insertedDrafts[1].id,
+                actor_user_id: insertedUsers[1].id, // Sarah Manager
+                action: 'draft_approved',
+                metadata: {
+                    approval_notes: 'Looks good, send it out',
+                    reviewed_duration_seconds: 120
+                },
+                ip_address: '192.168.1.101'
+            },
+            {
+                thread_id: insertedThreads[2].id,
+                actor_user_id: insertedUsers[2].id, // Mike Admin
+                action: 'thread_status_changed',
+                metadata: {
+                    old_status: 'active',
+                    new_status: 'closed',
+                    reason: 'Issue resolved'
+                },
+                ip_address: '192.168.1.102'
+            }
+        ]).returning();
+        console.log(`✓ Inserted ${insertedActions.length} agent actions`);
         console.log('✅ Database seed completed successfully!');
         console.log('\nSeeded data summary:');
         console.log(`- Users: ${insertedUsers.length} (agent, manager, admin)`);
         console.log(`- Threads: ${insertedThreads.length} (active, needs_attention, closed)`);
         console.log(`- Emails: ${insertedEmails.length} (mix of inbound/outbound, includes 1 draft)`);
         console.log(`- Draft responses: ${insertedDrafts.length} (pending, approved, rejected, sent)`);
+        console.log(`- Agent actions: ${insertedActions.length} (email_read, draft_created, draft_approved, thread_status_changed)`);
     }
     catch (error) {
         console.error('❌ Seed failed:', error);

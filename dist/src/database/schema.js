@@ -1,11 +1,22 @@
-import { pgTable, serial, varchar, text, timestamp, boolean, integer, decimal, jsonb, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, text, timestamp, boolean, integer, decimal, jsonb, pgEnum, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 // Define enums first
 export const statusEnum = pgEnum('status', ['active', 'closed', 'needs_attention']);
 export const directionEnum = pgEnum('direction', ['inbound', 'outbound']);
 export const draftStatusEnum = pgEnum('draft_status', ['pending', 'approved', 'rejected', 'sent']);
 export const roleEnum = pgEnum('role', ['agent', 'manager', 'admin']);
-export const agentActionEnum = pgEnum('agent_action', ['generate_response', 'approve_draft', 'reject_draft', 'send_email', 'escalate_thread']);
+export const agentActionEnum = pgEnum('agent_action', [
+    'email_read',
+    'email_forwarded',
+    'draft_created',
+    'draft_edited',
+    'draft_approved',
+    'draft_rejected',
+    'draft_sent',
+    'thread_assigned',
+    'thread_status_changed',
+    'thread_archived'
+]);
 // User Table
 export const users = pgTable('users', {
     id: serial('id').primaryKey(),
@@ -59,31 +70,42 @@ export const draft_responses = pgTable('draft_responses', {
 // Agent Actions Table
 export const agent_actions = pgTable('agent_actions', {
     id: serial('id').primaryKey(),
-    thread_id: integer('thread_id').references(() => threads.id).notNull(),
+    thread_id: integer('thread_id')
+        .references(() => threads.id, { onDelete: 'restrict' })
+        .notNull(),
+    email_id: integer('email_id')
+        .references(() => emails.id, { onDelete: 'set null' }),
+    draft_response_id: integer('draft_response_id')
+        .references(() => draft_responses.id, { onDelete: 'set null' }),
+    actor_user_id: integer('actor_user_id')
+        .references(() => users.id, { onDelete: 'set null' }),
     action: agentActionEnum('action').notNull(),
-    email_id: integer('email_id').references(() => emails.id),
-    draft_response_id: integer('draft_response_id').references(() => draft_responses.id),
-    actor_user_id: integer('actor_user_id').references(() => users.id),
     metadata: jsonb('metadata'),
     ip_address: varchar('ip_address', { length: 45 }),
-    created_at: timestamp('created_at').defaultNow()
-});
+    created_at: timestamp('created_at').defaultNow().notNull()
+}, (table) => ({
+    threadTimelineIdx: index('thread_timeline_idx').on(table.thread_id, table.created_at.desc()),
+    actorIdx: index('actor_idx').on(table.actor_user_id)
+}));
 // Define relations
 export const usersRelations = relations(users, ({ many }) => ({
-    draft_responses: many(draft_responses)
+    draft_responses: many(draft_responses),
+    agent_actions: many(agent_actions)
 }));
 export const threadsRelations = relations(threads, ({ many }) => ({
     emails: many(emails),
-    draft_responses: many(draft_responses)
+    draft_responses: many(draft_responses),
+    agent_actions: many(agent_actions)
 }));
 export const emailsRelations = relations(emails, ({ one, many }) => ({
     thread: one(threads, {
         fields: [emails.thread_id],
         references: [threads.id]
     }),
-    draft_responses: many(draft_responses)
+    draft_responses: many(draft_responses),
+    agent_actions: many(agent_actions)
 }));
-export const draftResponsesRelations = relations(draft_responses, ({ one }) => ({
+export const draftResponsesRelations = relations(draft_responses, ({ one, many }) => ({
     email: one(emails, {
         fields: [draft_responses.email_id],
         references: [emails.id]
@@ -99,7 +121,8 @@ export const draftResponsesRelations = relations(draft_responses, ({ one }) => (
     parent_draft: one(draft_responses, {
         fields: [draft_responses.parent_draft_id],
         references: [draft_responses.id]
-    })
+    }),
+    agent_actions: many(agent_actions)
 }));
 export const agentActionsRelations = relations(agent_actions, ({ one }) => ({
     thread: one(threads, {

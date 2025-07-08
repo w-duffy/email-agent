@@ -1,0 +1,3 @@
+ALTER TABLE "draft_responses" ADD CONSTRAINT "draft_responses_parent_draft_id_draft_responses_id_fk" FOREIGN KEY ("parent_draft_id") REFERENCES "public"."draft_responses"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "thread_timeline_idx" ON "agent_actions" USING btree ("thread_id","created_at" DESC NULLS LAST);--> statement-breakpoint
+CREATE INDEX "actor_idx" ON "agent_actions" USING btree ("actor_user_id");

@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, timestamp, boolean, integer, decimal, jsonb, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, text, timestamp, boolean, integer, decimal, jsonb, pgEnum, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // Define enums first
@@ -89,7 +89,10 @@ export const agent_actions = pgTable('agent_actions', {
   metadata: jsonb('metadata'),
   ip_address: varchar('ip_address', { length: 45 }),
   created_at: timestamp('created_at').defaultNow().notNull()
-});
+}, (table) => ({
+  threadTimelineIdx: index('thread_timeline_idx').on(table.thread_id, table.created_at.desc()),
+  actorIdx: index('actor_idx').on(table.actor_user_id)
+}));
 
 // Define relations
 export const usersRelations = relations(users, ({ many }) => ({
