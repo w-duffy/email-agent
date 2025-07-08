@@ -175,7 +175,7 @@ async function seed() {
                 action: 'draft_created',
                 metadata: {
                     model: 'gpt-4',
-                    confidence_score: 0.85,
+                    confidence_score: '0.85',
                     processing_time_ms: 1250,
                     tokens_used: 342
                 }
